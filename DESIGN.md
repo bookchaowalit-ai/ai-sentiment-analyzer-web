@@ -39,3 +39,21 @@ text clears the stale result.
 Desktop places input and result on one workbench. On mobile the input remains
 first, the result follows, and both preserve generous reading width and visible
 focus.
+
+
+---
+
+## Storybook
+
+Storybook 10 (`@storybook/nextjs-vite`) shows this design system with the app's real CSS, tokens and fonts.
+
+```bash
+npm run storybook        # http://localhost:6006
+npm run build-storybook  # static build in storybook-static/ (CI: .github/workflows/storybook.yml)
+```
+
+- **Foundations/Tokens** reads every CSS custom property the app defines at runtime, so it never drifts from the code.
+- **Design/DESIGN.md** renders this file.
+- **Components/**, **Sections/** and **Pages/** show the UI with mock data only (no network, analytics off).
+- Toolbar: locale, theme (light / dark, when the app has a dark theme), viewports 320 / 375 / 768 / 1440. The a11y panel runs axe (WCAG 2.2 AA).
+- Rule: a new shared component or page section ships with a story in `stories/`.
