@@ -1,23 +1,30 @@
 import type { Metadata } from "next";
+import { Geist } from "next/font/google";
 import { SITE_URL } from "@/lib/site";
-import { DM_Mono, Libre_Baskerville, Manrope } from "next/font/google";
 import "./globals.css";
 
-const libre = Libre_Baskerville({ variable: "--font-libre", weight: ["400", "700"], subsets: ["latin"] });
-const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
-const dmMono = DM_Mono({ variable: "--font-dm-mono", weight: ["400", "500"], subsets: ["latin"] });
+// The font variable sits on <html>: the App shell tokens live on :root and read it from there.
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+
+const description = "Read the tone of a sentence with a transparent word list that runs in your browser. Every counted word is shown; it is a heuristic, not a trained model.";
 
 export const metadata: Metadata = {
-  title: "Tone Lab — bookchaowalit",
-  description: "A transparent, lexicon-based sentiment bench that runs in the browser.",
-  keywords: ["sentiment analyzer", "bookchaowalit", "language interface"],
-  authors: [{ name: "bookchaowalit", url: "https://bookchaowalit.com" }],
-  creator: "bookchaowalit",
+  title: "Tone Lab | Bookchaowalit",
+  description,
+  keywords: ["sentiment analyzer", "lexicon", "bookchaowalit"],
+  authors: [{ name: "Bookchaowalit", url: "https://bookchaowalit.com" }],
+  creator: "Bookchaowalit",
   metadataBase: new URL(SITE_URL),
-  openGraph: { type: "website", locale: "en_US", title: "Tone Lab — bookchaowalit", description: "A transparent, lexicon-based sentiment bench that runs in the browser.", siteName: "Tone Lab" },
-  twitter: { card: "summary", title: "Tone Lab — bookchaowalit", description: "A transparent, lexicon-based sentiment bench that runs in the browser.", creator: "@bookchaowalit" },
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", locale: "en_US", url: "/", title: "Tone Lab | Bookchaowalit", description, siteName: "Bookchaowalit" },
+  twitter: { card: "summary", title: "Tone Lab | Bookchaowalit", description },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body className={`${libre.variable} ${manrope.variable} ${dmMono.variable}`}>{children}</body></html>;
+  return (
+    <html lang="en" className={geistSans.variable}>
+      <body>{children}</body>
+    </html>
+  );
 }
