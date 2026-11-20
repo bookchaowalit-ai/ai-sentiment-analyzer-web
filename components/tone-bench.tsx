@@ -30,6 +30,8 @@ export function ToneBench() {
   const trySample = () => {
     setText(SAMPLE);
     read(SAMPLE);
+    // The sample button hides once the field has text, so keep focus on the field it filled.
+    field.current?.focus();
   };
   const clear = () => {
     setText("");
@@ -55,7 +57,8 @@ export function ToneBench() {
         <div className="as-composer-foot">
           <p id={countId} className="as-composer-note"><span className="tl-count">{text.length}</span> characters · stays in this browser</p>
           <div className="as-composer-actions">
-            <button type="button" className="as-plain" onClick={trySample}>Try a sample</button>
+            {/* Only offered on an empty field, so the sample never overwrites what the user wrote. */}
+            {text.trim() ? null : <button type="button" className="as-plain" onClick={trySample}>Try a sample</button>}
             {text ? <button type="button" className="as-plain" onClick={clear}>Clear</button> : null}
             <button type="submit" className="as-button">Read tone</button>
           </div>
@@ -64,15 +67,21 @@ export function ToneBench() {
 
       <section aria-labelledby="reading-title" aria-live="polite">
         <h2 id="reading-title" className="as-sr">Reading</h2>
-        <Reading result={result} />
+        <Reading result={result} text={text} />
       </section>
     </div>
   );
 }
 
-function Reading({ result }: { result: Analysis | null }) {
+/** True when the text has letters, just none the a–z word list can read (Thai, Cyrillic, accented-only…). */
+const hasOtherLetters = (text: string) => /\p{L}/u.test(text);
+
+function Reading({ result, text }: { result: Analysis | null; text: string }) {
   if (result === null) {
-    return <div className="as-list as-empty"><strong>Nothing read yet</strong>Type or paste a sentence and choose Read tone, or try the sample.</div>;
+    return <div className="as-list as-empty"><strong>Nothing read yet</strong>{text.trim() ? "Choose Read tone to read your text." : "Type or paste a sentence and choose Read tone, or try the sample."}</div>;
+  }
+  if (result.label === "empty" && hasOtherLetters(text)) {
+    return <div className="as-list as-empty"><strong>No English words to read</strong>The word list only covers English words written in a–z, so this text has nothing it can score. Try the same idea as an English sentence.</div>;
   }
   if (result.label === "empty") {
     return <div className="as-list as-empty"><strong>No words to read</strong>The text has no letters or numbers in it. Add a sentence and try again.</div>;

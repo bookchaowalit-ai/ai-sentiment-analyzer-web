@@ -4,9 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "@/app/page";
-import RootLayout, { metadata } from "@/app/layout";
-import robots from "@/app/robots";
-import sitemap from "@/app/sitemap";
+import RootLayout from "@/app/layout";
 import { SAMPLE } from "@/components/tone-bench";
 
 vi.mock("next/font/google", () => ({ Geist: () => ({ variable: "font-geist" }) }));
@@ -83,9 +81,29 @@ describe("Tone Lab on the App shell", () => {
     expect($(".as-empty")?.textContent).toContain("No words to read");
   });
 
+  it("says the word list is English-only when the text has letters it cannot read", () => {
+    type("ดีมาก");
+    submit();
+    expect($(".as-empty")?.textContent).toContain("No English words to read");
+    expect($(".as-empty")?.textContent).toContain("Try the same idea as an English sentence");
+    type("!!! ???");
+    submit();
+    expect($(".as-empty")?.textContent).toContain("No words to read");
+  });
+
+  it("never overwrites the user's text with the sample", () => {
+    type("My own draft");
+    expect(button("Try a sample")).toBeUndefined();
+    expect($(".as-empty")?.textContent).toContain("Choose Read tone to read your text.");
+    expect(($("textarea") as HTMLTextAreaElement).value).toBe("My own draft");
+    press(button("Clear")!);
+    expect(button("Try a sample")).toBeDefined();
+  });
+
   it("tries the sample and clears back to the empty state", () => {
     press(button("Try a sample")!);
     expect(($("textarea") as HTMLTextAreaElement).value).toBe(SAMPLE);
+    expect(document.activeElement).toBe($("textarea"));
     expect($(".tl-reading .as-pill")?.textContent).toBe("Positive");
     expect(host.textContent).toContain("after “but” ×1.5");
     press(button("Clear")!);
@@ -95,12 +113,39 @@ describe("Tone Lab on the App shell", () => {
   });
 });
 
+/** Import the metadata modules fresh with NEXT_PUBLIC_SITE_URL set (or unset) first. */
+async function freshSiteModules(siteUrl: string | undefined) {
+  vi.resetModules();
+  vi.stubEnv("NEXT_PUBLIC_SITE_URL", siteUrl);
+  const [{ metadata: meta }, { default: freshRobots }, { default: freshSitemap }] = await Promise.all([
+    import("@/app/layout"),
+    import("@/app/robots"),
+    import("@/app/sitemap"),
+  ]);
+  return { meta, freshRobots, freshSitemap };
+}
+
 describe("layout and metadata", () => {
-  it("uses Geist on <html> and the site's own domain", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("uses Geist on <html>", () => {
     const html = renderToString(<RootLayout><p>child</p></RootLayout>);
     expect(html).toContain('<html lang="en" class="font-geist">');
-    expect(String(metadata.metadataBase)).toBe("https://sentiment-analyzer.bookchaowalit.com/");
-    expect(sitemap().map((entry) => entry.url)).toEqual(["https://sentiment-analyzer.bookchaowalit.com"]);
-    expect(robots().sitemap).toBe("https://sentiment-analyzer.bookchaowalit.com/sitemap.xml");
+  });
+
+  it("defaults to the site's own domain when NEXT_PUBLIC_SITE_URL is unset", async () => {
+    const { meta, freshRobots, freshSitemap } = await freshSiteModules(undefined);
+    expect(String(meta.metadataBase)).toBe("https://sentiment-analyzer.bookchaowalit.com/");
+    expect(freshSitemap().map((entry) => entry.url)).toEqual(["https://sentiment-analyzer.bookchaowalit.com"]);
+    expect(freshRobots().sitemap).toBe("https://sentiment-analyzer.bookchaowalit.com/sitemap.xml");
+  });
+
+  it("uses NEXT_PUBLIC_SITE_URL for metadata, sitemap and robots when it is set", async () => {
+    const { meta, freshRobots, freshSitemap } = await freshSiteModules("https://preview.example.test");
+    expect(String(meta.metadataBase)).toBe("https://preview.example.test/");
+    expect(freshSitemap().map((entry) => entry.url)).toEqual(["https://preview.example.test"]);
+    expect(freshRobots().sitemap).toBe("https://preview.example.test/sitemap.xml");
   });
 });
